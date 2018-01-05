@@ -24,15 +24,13 @@ void ux_mcpwnInit(){
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);
 }
 
-
-void ux_motorFrward(float duty_cycle)
-{
-    mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty_cycle);
-    mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
-}
-
-
 void ux_motorStop()
 {
     mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
+}
+
+void ux_motorSet(float duty_cycle)
+{
+	mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, duty_cycle);
+	mcpwm_set_duty_type(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, MCPWM_DUTY_MODE_0); //call this each time, if operator was previously in low/high state
 }
