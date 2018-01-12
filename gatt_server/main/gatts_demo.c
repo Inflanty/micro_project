@@ -12,6 +12,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/queue.h"
 #include "esp_system.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -25,6 +26,16 @@
 #include "esp_gatt_common_api.h"
 
 #include "sdkconfig.h"
+
+#include "userLib/userLib.h"
+#include "driver/mcpwm.h"
+#include "soc/mcpwm_reg.h"
+#include "soc/mcpwm_struct.h"
+#include "driver/timer.h"
+#include "soc/timer_group_struct.h"
+#include "driver/adc.h"
+#include "driver/gpio.h"
+#include "esp_adc_cal.h"
 
 #define GATTS_TAG "GATTS_DEMO"
 
@@ -149,6 +160,21 @@ struct gatts_profile_inst {
     uint16_t descr_handle;
     esp_bt_uuid_t descr_uuid;
 };
+
+
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERvariables ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+
+static xQueueHandle timQueue = NULL;
+
+typedef struct{
+	int type;
+	int timerGroup;
+	uint64_t timerValue;
+}timer_event;
+
+extern struct connData __link;
+
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERvariables ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
 static struct gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
@@ -663,10 +689,57 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
     } while (0);
 }
 
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERfunction ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+static void ut_ledTask(void* arg) 							 /* to set LED functions, used userLib in ${main/userLib/userLib.h} */
+{
+	char* TASK_NAME = "LED_TASK";
+	for(;;)
+	{
+		timer_event timStruct;
+		if(xQueueReceive(timQueue, &timStruct, portMAX_DELAY))
+		{
+			//				FULL CONTROLL TASK
+			printf("%s : Timer interrupt...\n", TASK_NAME);
+			if(timStruct.timerGroup == TIMER_GROUP_0)
+			{
+				printf("%s : Group 0 interrupt alarm !\n", TASK_NAME);
+				;
+			}else
+			{
+				printf("%s : Group not recognized !", TASK_NAME);
+			}
+		} else
+		{
+			//				NO CONTROLLED TASK
+		}
+	}
+}
+
+void IRAM_ATTR timer_group0_isr(void *para) {
+
+	timer_event timStruct;
+	int timer_idx = (int) para;
+	uint32_t intr_status = TIMERG0.int_st_timers.val;
+	if ((intr_status & BIT(timer_idx)) && timer_idx == TIMER_1) {
+		/*Timer1 is an example that will reload counter value*/
+		TIMERG0.hw_timer[timer_idx].update = 1;
+		/*We don't call a API here because they are not declared with IRAM_ATTR*/
+		TIMERG0.int_clr_timers.t1 = 1;
+		/*Post an event to out example task*/
+		timStruct.timerGroup = TIMER_GROUP_0;
+		timStruct.timerValue = ((uint64_t) TIMERG0.hw_timer[timer_idx].cnt_high)
+				<< 32 | TIMERG0.hw_timer[timer_idx].cnt_low;
+		xQueueSendFromISR(timQueue, &timStruct, NULL);
+		/*For a auto-reload timer, we still need to set alarm_en bit if we want to enable alarm again.*/
+		TIMERG0.hw_timer[timer_idx].config.alarm_en = 1;
+	}
+}
+
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERfunction ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+
 void app_main()
 {
     esp_err_t ret;
-
     // Initialize NVS.
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES) {
@@ -724,6 +797,8 @@ void app_main()
     if (local_mtu_ret){
         ESP_LOGE(GATTS_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
     }
+
+    xTaskCreate(ut_ledTask, "LED_TASK", 1024, NULL, 10, NULL);
 
     return;
 }
