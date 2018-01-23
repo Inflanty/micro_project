@@ -142,30 +142,29 @@ uint32_t ux_diffCalculate(uint32_t* preValue, uint32_t actualValue)
 	}
 }
 
-void saveParam(struct connData ,paramAttr actual, uint32_t actualAttr)
+void uv_saveParam(struct connData *__dts,paramAttr actual, uint32_t actualAttr)
 {
-	struct connData parameterList;
 	switch(actual){
 	case __GATT_IF:
-		parameterList.gatts_if = actualAttr;
+		__dts->gatts_if = actualAttr;
 		break;
 	case __APP_ID:
-		parameterList.app_id = actualAttr;
+		__dts->app_id = actualAttr;
 		break;
 	case __CONN_ID:
-		parameterList.conn_id = actualAttr;
+		__dts->conn_id = actualAttr;
 		break;
 	case __CHAR_HANDLE:
-		parameterList.char_handle = actualAttr;
+		__dts->char_handle = actualAttr;
 		break;
 	case __CONN:
-		parameterList.connecting = actualAttr;
+		__dts->connecting = actualAttr;
 		break;
 	case __IS_CONN:
-		parameterList.isConnected = actualAttr;
+		__dts->isConnected = actualAttr;
 		break;
 	case __NO_CONN:
-		parameterList.noConnection = actualAttr;
+		__dts->noConnection = actualAttr;
 		break;
 	default:
 

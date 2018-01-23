@@ -5,8 +5,8 @@
  *
  * */
 
-#ifndef userLib_h
-#define userLib_h
+#ifndef USERLIB
+#define USERLIB
 
 #include <stdbool.h>
 
@@ -46,7 +46,7 @@ enum param{
 	__NO_CONN,
 };
 
-typedef int paramAttr; 										/* SYSTEMvar : paramAttr accept <enum param> */
+typedef int paramAttr; 										/* SYSTEMvar : paramAttr accept <enum param>, */
 
 void uv_motorInit	();										/* SYSTEMfnc : Motor initiation */
 void uv_ledInit		();										/* SYSTEMfnc : LED initiation */
@@ -56,5 +56,7 @@ void uv_motorStop	();										/* MOTORfnc  : Use this function if you want to s
 void uv_motorSet	(float duty_cycle);						/* MOTORfnc  : If you want set specific value 0 - 100 % */
 void uv_ledUp		(enum dir direction, float step_val);	/* LEDfnc    : If you want perform dimming/brightening, provide direction [UP/DOWN] and value of the step */
 void uv_ledSet		(float duty_cycle);						/* LEDfnc 	 : If you want set specific value 0 - 100 % */
+uint32_t ux_diffCalculate	(uint32_t* preValue, uint32_t actualValue); 				/* USERfnc : Calculate different between 2 uint32 */
+void uv_saveParam			(struct connData,paramAttr actual, uint32_t actualAttr);	/* USERfnc : Saving parameters */
 
 #endif

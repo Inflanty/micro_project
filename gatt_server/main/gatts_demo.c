@@ -38,6 +38,7 @@
 #include "esp_adc_cal.h"
 
 #define GATTS_TAG "GATTS_DEMO"
+#define SENSOR_GPIO 18
 
 ///Declare the static function
 static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
@@ -172,7 +173,7 @@ typedef struct{
 	uint64_t timerValue;
 }timer_event;
 
-extern struct connData __link;
+void uv_sendNote(int PROFILE_APP_ID, uint8_t *indicate_data);
 
 /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERvariables ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
@@ -354,6 +355,10 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
 
 #endif
         esp_ble_gatts_create_service(gatts_if, &gl_profile_tab[PROFILE_A_APP_ID].service_id, GATTS_NUM_HANDLE_TEST_A);
+        /* PARAMETERS SAVING */
+        //__link_a->gatts_if = gatts_if;
+        //__link_a->app_id = param->reg.app_id;
+
         break;
     case ESP_GATTS_READ_EVT: {
         ESP_LOGI(GATTS_TAG, "GATT_READ_EVT, conn_id %d, trans_id %d, handle %d\n", param->read.conn_id, param->read.trans_id, param->read.handle);
@@ -464,6 +469,8 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         if (add_descr_ret){
             ESP_LOGE(GATTS_TAG, "add char descr failed, error code =%x", add_descr_ret);
         }
+        /* PARAMETER SAVING */
+        //__link_a->char_handle = param->add_char.attr_handle;
         break;
     }
     case ESP_GATTS_ADD_CHAR_DESCR_EVT:
@@ -494,6 +501,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         gl_profile_tab[PROFILE_A_APP_ID].conn_id = param->connect.conn_id;
         //start sent the update connection parameters to the peer device.
         esp_ble_gap_update_conn_params(&conn_params);
+        //__link_a->conn_id=param->connect.conn_id;
         break;
     }
     case ESP_GATTS_DISCONNECT_EVT:
@@ -714,25 +722,94 @@ static void ut_ledTask(void* arg) 							 /* to set LED functions, used userLib 
 		}
 	}
 }
+/*
+static void ut_sensorTask(void *arg)
+{
+	char* TASK_NAME = "SENSOR_TASK";
+	uint64_t* timer_val;
+	vTaskDelay(500 / portTICK_PERIOD_MS);
+	if(gpio_get_level(SENSOR_GPIO))
+	{
+		uint8_t send_tab[2] = {0xFF, 0x01};
+		uv_print(TASK_NAME, "Sensor alert !");
+		uv_sendNote(PROFILE_A_APP_ID, send_tab);
+		//TIMER START
+		timer_start(TIMER_GROUP_0, TIMER_0);
+	}
+	else
+	{
+		//TIMER GET VALUE
+		timer_get_counter_value(TIMER_GROUP_0, TIMER_0, timer_val);
+		if(*timer_val == TIMER_INTERVAL0_SEC)
+		{
+			uint8_t send_tab[2] = {0x00, 0x01};
+			uv_print(TASK_NAME, "Sensor low . Timer high");
+			uv_sendNote(PROFILE_A_APP_ID, send_tab);
+			*timer_val = 0;
+		}
+		else
+		{
+			*timer_val = 0;
+		}
+	}
+}
+*/
+static void ut_synchronicSensorTask(void *arg)
+{
+	char* TASK_NAME = "SYNCHRONIC_SENSOR_TASK";
+	uint8_t send_tab[2] = {0xEE, 0x01};
+	if(gpio_get_level(SENSOR_GPIO))
+	{
+		send_tab[0] = 0xFF;
+		uv_print(TASK_NAME, "Sensor alert . Sending motion");
+		uv_sendNote(PROFILE_A_APP_ID, send_tab);
+	}
+	else
+	{
+		if(send_tab[0] == 0xFF)
+		{
+			send_tab[0] = 0x00;
+			uv_print(TASK_NAME, "Timeout . Sending no motion");
+			uv_sendNote(PROFILE_A_APP_ID, send_tab);
+		}
+		else
+		{
+			;
+		}
+
+	}
+	vTaskDelete( NULL );
+}
 
 void IRAM_ATTR timer_group0_isr(void *para) {
 
 	timer_event timStruct;
 	int timer_idx = (int) para;
 	uint32_t intr_status = TIMERG0.int_st_timers.val;
-	if ((intr_status & BIT(timer_idx)) && timer_idx == TIMER_1) {
+	if ((intr_status & BIT(timer_idx)) && timer_idx == TIMER_0) {
 		/*Timer1 is an example that will reload counter value*/
-		TIMERG0.hw_timer[timer_idx].update = 1;
+		TIMERG0.hw_timer[timer_idx].update = 0;
 		/*We don't call a API here because they are not declared with IRAM_ATTR*/
 		TIMERG0.int_clr_timers.t1 = 1;
 		/*Post an event to out example task*/
 		timStruct.timerGroup = TIMER_GROUP_0;
 		timStruct.timerValue = ((uint64_t) TIMERG0.hw_timer[timer_idx].cnt_high)
 				<< 32 | TIMERG0.hw_timer[timer_idx].cnt_low;
-		xQueueSendFromISR(timQueue, &timStruct, NULL);
+		//xQueueSendFromISR(timQueue, &timStruct, NULL);
 		/*For a auto-reload timer, we still need to set alarm_en bit if we want to enable alarm again.*/
 		TIMERG0.hw_timer[timer_idx].config.alarm_en = 1;
+		xTaskCreate(ut_synchronicSensorTask, "SYNCHRONIC_SENSOR_TASK", 1024, NULL, 10, NULL);
+
 	}
+}
+
+void uv_sendNote(int PROFILE_APP_ID, uint8_t *indicate_data)
+{
+	char* FNC_NAME = "BLUETOOTH SEND";
+	uv_print(FNC_NAME, "Sending Notification");
+	printf(" Data to send side : %d, from profile : %d", sizeof(indicate_data), PROFILE_APP_ID);
+	//esp_ble_gatts_send_indicate(gl_profile_tab[PROFILE_APP_ID].gatts_if, gl_profile_tab[PROFILE_APP_ID].conn_id,
+		//	gl_profile_tab[PROFILE_APP_ID].char_handle, sizeof(indicate_data), indicate_data, false);
 }
 
 /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERfunction ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
@@ -799,6 +876,28 @@ void app_main()
     }
 
     xTaskCreate(ut_ledTask, "LED_TASK", 1024, NULL, 10, NULL);
+/*
+	struct connData *param;
+	int newValue;
+	char* newValuestr = "NO";
+
+	printf("\nWRITE NEW VALUE FOR GATT_IF : ");
+	scanf("%d", &newValue);
+	uv_saveParam(*param, __GATT_IF, (uint32_t)newValue);
+	printf("\nWRITE NEW VALUE FOR APP_ID : ");
+	scanf("%d", &newValue);
+	uv_saveParam(*param, __APP_ID, (uint32_t)newValue);
+	printf("\nWRITE NEW VALUE FOR CHAR_HANDLE : ");
+	scanf("%d", &newValue);
+	uv_saveParam(*param, __CHAR_HANDLE, (uint32_t)newValue);
+	printf("\nIS THERE CONNECTION ? [Y/N] ");
+	scanf("%s", newValuestr);
+	if(newValuestr ==(char*) "Y"){
+		uv_saveParam(*param, __CONN, newValuestr);
+	} else if (newValuestr ==(char*) "N")
+	{
+		uv_saveParam(*param, __NO_CONN, newValuestr);
+	}*/
 
     return;
 }

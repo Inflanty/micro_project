@@ -45,6 +45,13 @@ void uv_ledInit()
 	mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config);
 }
 
+void uv_sensorGPIOInit()
+{
+	printf("initializing sensor gpio...\nsensorIN = GPIO18\n");
+
+	printf("Configuring Initial Parameters of SensorIN...\n");
+}
+
 void uv_motorStop()
 {
     mcpwm_set_signal_low(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A);
@@ -110,7 +117,7 @@ void uv_timer0Init(char* timer_group0_isr)
 			(void*) timer_idx,
 			ESP_INTR_FLAG_IRAM, NULL);
 	/*Start timer counter*/
-	timer_start(timer_group, timer_idx);
+	//timer_start(timer_group, timer_idx);
 }
 
 void uv_adcInit()
@@ -142,35 +149,10 @@ uint32_t ux_diffCalculate(uint32_t* preValue, uint32_t actualValue)
 	}
 }
 
-void saveParam(struct connData ,paramAttr actual, uint32_t actualAttr)
+void uv_print(char *text_log, char *text)
 {
-	struct connData parameterList;
-	switch(actual){
-	case __GATT_IF:
-		parameterList.gatts_if = actualAttr;
-		break;
-	case __APP_ID:
-		parameterList.app_id = actualAttr;
-		break;
-	case __CONN_ID:
-		parameterList.conn_id = actualAttr;
-		break;
-	case __CHAR_HANDLE:
-		parameterList.char_handle = actualAttr;
-		break;
-	case __CONN:
-		parameterList.connecting = actualAttr;
-		break;
-	case __IS_CONN:
-		parameterList.isConnected = actualAttr;
-		break;
-	case __NO_CONN:
-		parameterList.noConnection = actualAttr;
-		break;
-	default:
-
-		break;
-	}
+	printf(CYN"\n%s : "RESET, text_log);
+	printf("%s", text);
 }
 
 

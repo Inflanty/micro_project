@@ -10,6 +10,15 @@
 
 #include <stdbool.h>
 
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
 #define MotorOUT 18
 #define ledOUT 4
 #define TIMER_DIVIDER 0
@@ -19,6 +28,7 @@
 #define V_REF 0
 #define ADC1_CHANNEL 0
 #define ACCEPTABLE_ADC_DIFF 0
+#define SENSOR_GPIO 18
 
 struct connData{
     uint16_t gatts_if;
@@ -46,8 +56,6 @@ enum param{
 	__NO_CONN,
 };
 
-typedef int paramAttr; 										/* SYSTEMvar : paramAttr accept <enum param> */
-
 void uv_motorInit	();										/* SYSTEMfnc : Motor initiation */
 void uv_ledInit		();										/* SYSTEMfnc : LED initiation */
 void uv_timer0Init	(char* timer_group0_isr);				/* SYSTEMfnc : Timer initiation */
@@ -56,5 +64,6 @@ void uv_motorStop	();										/* MOTORfnc  : Use this function if you want to s
 void uv_motorSet	(float duty_cycle);						/* MOTORfnc  : If you want set specific value 0 - 100 % */
 void uv_ledUp		(enum dir direction, float step_val);	/* LEDfnc    : If you want perform dimming/brightening, provide direction [UP/DOWN] and value of the step */
 void uv_ledSet		(float duty_cycle);						/* LEDfnc 	 : If you want set specific value 0 - 100 % */
+void uv_print		(char *text_log, char *text);			/* USERfnc	 : If you want to use log output, 1 variable : log_name, 2 variable : text */
 
 #endif
