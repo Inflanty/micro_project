@@ -28,7 +28,10 @@
 #define V_REF 0
 #define ADC1_CHANNEL 0
 #define ACCEPTABLE_ADC_DIFF 0
-#define SENSOR_GPIO 18
+#define GPIO_INPUT_IO_0     	4
+#define GPIO_INPUT_IO_1     	5
+#define GPIO_INPUT_PIN_SEL  	((1<<GPIO_INPUT_IO_0) | (1<<GPIO_INPUT_IO_1))
+#define ESP_INTR_FLAG_DEFAULT 	0
 
 struct connData{
     uint16_t gatts_if;
@@ -58,8 +61,9 @@ enum param{
 
 void uv_motorInit	();										/* SYSTEMfnc : Motor initiation */
 void uv_ledInit		();										/* SYSTEMfnc : LED initiation */
-void uv_timer0Init	(char* timer_group0_isr);				/* SYSTEMfnc : Timer initiation */
+void uv_timer0Init	(char* timer_group0_isr);				/* SYSTEMfnc : Timer initiation witch interrupt */
 void uv_adcInit		();										/* SYSTEMfnc : A/C initiation */
+void uv_gpioInit	(char *gpio_isr_handler);				/* SYSTEMfnc : GPIO initiation with interrupt */
 void uv_motorStop	();										/* MOTORfnc  : Use this function if you want to stop the motor immediately */
 void uv_motorSet	(float duty_cycle);						/* MOTORfnc  : If you want set specific value 0 - 100 % */
 void uv_ledUp		(enum dir direction, float step_val);	/* LEDfnc    : If you want perform dimming/brightening, provide direction [UP/DOWN] and value of the step */
