@@ -14,6 +14,10 @@ Client and Server topology,
 
 The light is conntroled only by BLE devices, there is no switches, neither lamps aren't controlled manualy. Every noticed triger will activate relevant function (eg Lights ON).
 
+### Decision time 
+
+The most sensitive point of the system is the decision time, when client makes decision regard of light switching -> there is most faults probably.
+
 # PROJECT_v1.0
 ## Motor Control 
 

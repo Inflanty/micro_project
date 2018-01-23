@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -175,6 +176,9 @@ typedef struct{
 
 void uv_sendNote(int PROFILE_APP_ID, uint8_t *indicate_data);
 
+bool isConnected = false;
+bool Connecting = false;
+
 /* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERvariables ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
 /* One gatt-based profile one app_id and one gatts_if, this array will store the gatts_if returned by ESP_GATTS_REG_EVT */
@@ -235,6 +239,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
             ESP_LOGE(GATTS_TAG, "Advertising start failed\n");
         }
+        Connecting = true;
         break;
     case ESP_GAP_BLE_ADV_STOP_COMPLETE_EVT:
         if (param->adv_stop_cmpl.status != ESP_BT_STATUS_SUCCESS) {
@@ -502,6 +507,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         //start sent the update connection parameters to the peer device.
         esp_ble_gap_update_conn_params(&conn_params);
         //__link_a->conn_id=param->connect.conn_id;
+        isConnected = true;
         break;
     }
     case ESP_GATTS_DISCONNECT_EVT:
@@ -802,6 +808,12 @@ void IRAM_ATTR timer_group0_isr(void *para) {
 
 	}
 }
+/*
+static void IRAM_ATTR gpio_isr(void* arg) {
+	uint32_t gpio_num = (uint32_t) arg;
+	xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+
+}*/
 
 void uv_sendNote(int PROFILE_APP_ID, uint8_t *indicate_data)
 {
@@ -875,8 +887,17 @@ void app_main()
         ESP_LOGE(GATTS_TAG, "set local  MTU failed, error code = %x", local_mtu_ret);
     }
 
+
+    while(isConnected != true)
+    {
+    	;
+    }
+    uv_print("BLUETOOTH LOG :", "Devices are connected");
     xTaskCreate(ut_ledTask, "LED_TASK", 1024, NULL, 10, NULL);
-/*
+    uv_print("TASK LOG :", "LED_TASK start");
+    xTaskCreate(ut_synchronicSensorTask, "SENSOR_TASK", 1024, NULL, 10, NULL);
+    uv_print("TASK LOG :", "SENSOR_TASK start. sensor is activated .");
+    /*
 	struct connData *param;
 	int newValue;
 	char* newValuestr = "NO";

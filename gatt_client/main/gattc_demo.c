@@ -72,6 +72,13 @@ struct gattc_profile_inst {
     esp_bd_addr_t remote_bda;
 };
 
+struct state{
+	bool alarm;
+
+};
+
+struct state __myState, __serverState;
+
 /* One gatt-based profile one app_id and one gattc_if, this array will store the gattc_if returned by ESP_GATTS_REG_EVT */
 static struct gattc_profile_inst gl_profile_tab[PROFILE_NUM] = {
     [PROFILE_A_APP_ID] = {
@@ -243,6 +250,30 @@ static void gattc_profile_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_
             ESP_LOGI(GATTC_TAG, "ESP_GATTC_NOTIFY_EVT, receive indicate value:");
         }
         esp_log_buffer_hex(GATTC_TAG, p_data->notify.value, p_data->notify.value_len);
+
+        /* ; */
+        uint8_t *received_data;
+        received_data = p_data->notify.value;
+        if (p_data->notify.value_len == 2)
+        {
+    		ux_print("NOTIFY_LOG", "Received new data x2 length !");
+    		printf(" we have : %d . enjoy .", *received_data);
+        	switch (*received_data){
+        	case 0xFF:
+        		ux_print("ZONE_LOG", "server zone infringement !");
+        		__serverState.alarm = true;
+        		break;
+        	case 0x00:
+        		ux_print("ZONE_LOG", "server zone intact !");
+        		__serverState.alarm = false;
+        		break;
+        	default:
+        		ux_print("NOTIFY_LOG", "Can't recognize this data !");
+        		break;
+        	}
+        }
+
+        /* ; */
         break;
     case ESP_GATTC_WRITE_DESCR_EVT:
         if (p_data->write.status != ESP_GATT_OK){
@@ -395,6 +426,22 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         }
     } while (0);
 }
+
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERfunction ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+static void ut_loopTask(void *arg)
+{
+	char* TASK_NAME = "SYNCHRONIC_SENSOR_TASK";
+
+	for (;;)
+	{
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+		/* check the server state :
+		 * check my state :
+		 * : decision :*/
+	}
+	vTaskDelete( NULL );
+}
+/* ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ USERfunction ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
 
 void app_main()
 {
