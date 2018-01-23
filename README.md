@@ -18,6 +18,29 @@ The light is conntroled only by BLE devices, there is no switches, neither lamps
 
 The most sensitive point of the system is the decision time, when client makes decision regard of light switching -> there is most faults probably.
 
+### Client decison
+
+Client keep all decison about light switching.
+
+LOOP TASK____________________________________
+>ACTION ! 
+>	check my state:
+>	_MotionDetected
+>	_NoMotion
+>	_TimeCountingAfterMotion
+>	So there are three different states, each of them have own origin.
+>	_MotionDetected - state after detection motion in specific area.
+>	_NoMotion - state with no different in watched field.
+>	_TimeCountingAfterMotion - which occurs after motion detected.
+>
+>	check my server notification: 
+>	There are the same three state
+>	_MotionDetected
+>	_NoMotion
+>	_TimeCountingAfterMotion
+>	but refer to otcher device's (server exaclly) state.
+
+
 # PROJECT_v1.0
 ## Motor Control 
 
