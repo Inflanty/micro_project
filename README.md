@@ -12,7 +12,7 @@ Client and Server topology,
 
 ## Why actionless?
 
-The light is conntroled only by BLE devices, there is no switches, neither lamps are controlled manualy. Every noticed triger will activate relevant function (eg Lights ON) 
+The light is conntroled only by BLE devices, there is no switches, neither lamps aren't controlled manualy. Every noticed triger will activate relevant function (eg Lights ON).
 
 # PROJECT_v1.0
 ## Motor Control 
