@@ -20,12 +20,12 @@
 #define RESET "\x1B[0m"
 
 #define MotorOUT 18
-#define ledOUT 4
+#define ledOUT 5
 #define TIMER_DIVIDER 0
 #define TIMER_INTR_SEL 0
 #define TIMER_INTERVAL0_SEC 0
 #define TIMER_SCALE 0
-#define V_REF 0
+#define V_REF
 #define ADC1_CHANNEL 0
 #define ACCEPTABLE_ADC_DIFF 0
 #define GPIO_INPUT_IO_0     	4
